@@ -1,0 +1,5 @@
+This is a ChatGPT based chat bot intended to be used to practice Chinese.
+It supports text and audio output and responds to text input.
+It also supports translation of the output to pinyin and English.
+Practicing listening to Chinese is the primary goal of this bot.
+It is currently hardwired to my specific needs (traditional characters and my known vocabulary).
