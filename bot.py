@@ -34,13 +34,13 @@ def audio(text):
     tts = gTTS(text, lang='zh-TW')
     return tts
 
-def _play_audio(tts):
+def _play_audio(tts, speed):
     with tempfile.NamedTemporaryFile(delete=True) as file:
         tts.save(file.name)
-        os.system(f'ffplay -nodisp -autoexit -af "volume=0.3" "{file.name}" > /dev/null 2>&1')
+        os.system(f'ffplay -nodisp -autoexit -af "volume=0.3" -af "atempo={speed}" "{file.name}" > /dev/null 2>&1')
 
-def play_audio(tts):
-    threading.Thread(target=_play_audio, args=(tts,)).start()
+def play_audio(tts, speed=1):
+    threading.Thread(target=_play_audio, args=(tts,speed)).start()
 
 # Main function to carry out chat
 def chat(system_message):
@@ -53,16 +53,18 @@ def chat(system_message):
     hide_text = False
     while True:
         user_input = input(">").strip()
-        if user_input.lower() in ['exit', 'exit()']: # exit the conversation
+        if user_input.lower() in ['quit', 'q', 'exit', 'exit()']: # exit the conversation
             print("Goodbye!")
             break
         elif user_input.lower() in ['p', 'pinyin']: # print pinyin of last output
-            print(' '.join([py[0] for py in pinyin(last_output)]))
+            if(last_output):
+                print(' '.join([py[0] for py in pinyin(last_output)]))
         elif user_input.lower() in ['t', 'translate']: # translate last output
-            print(translate(last_output))
+            if(last_output):
+                print(translate(last_output))
         elif user_input.lower() in ['a', 'audio']: # play audio of last output
             if last_audio :
-                play_audio(last_audio)
+                play_audio(last_audio, speed=0.75)
         elif user_input.lower() in ['h', 'hide']: # toggle hide text
             hide_text = not hide_text
             if hide_text:
@@ -70,8 +72,10 @@ def chat(system_message):
             else:
                 print("Text will be shown")
         elif user_input.lower() in ['r', 'repeat']: # repeat text and audio of last output
-            print(last_output)
-            play_audio(last_audio)
+            if(last_output):
+                print(last_output)
+            if last_audio :
+                play_audio(last_audio, speed=0.75)
         else :                                      # continue conversation
             conversation.append({"role": "user", "content": user_input})
             try:
