@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Python Webserver with TTS</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        #output-box {
+            width: 100%;
+            height: 500px;
+            border: 1px solid #ccc;
+            padding: 10px;
+            overflow-y: scroll;
+        }
+        #input-box {
+            width: calc(100% - 60px);
+            padding: 10px;
+        }
+        #enter-button {
+            padding: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Conversation with Python Server</h1>
+    <div id="output-box"></div>
+    <br>
+    <input type="text" id="input-box" placeholder="Type your message here">
+    <button id="enter-button">Enter</button>
+
+    <script>
+        const outputBox = document.getElementById("output-box");
+        const inputBox = document.getElementById("input-box");
+        const enterButton = document.getElementById("enter-button");
+        
+        conversation = null;
+        hide = false;
+        
+        // Handle enter key and button click events
+        inputBox.addEventListener("keydown", (event) => {
+            if (event.key === "Enter") {
+                const userInput = inputBox.value.trim();
+                sendMessage(userInput);
+            }
+        });
+        enterButton.addEventListener("click", sendMessage);
+
+
+        async function sendMessage() {
+            const userInput = inputBox.value.trim();
+            if (!userInput) return;
+
+            // Display user's message in the output box
+            outputBox.innerHTML += `<p><strong>></strong> ${userInput}</p>`;
+            inputBox.value = "";
+            outputBox.scrollTop = outputBox.scrollHeight;
+
+            // Send the input to the server
+            try {
+                const response = await fetch("/chat", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        input: userInput,
+                        conversation: conversation,
+                        hide: hide   
+                    })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+
+                    // Display server's response in the output box
+                    outputBox.innerHTML += `<p>${data.response}</p>`;
+                    outputBox.scrollTop = outputBox.scrollHeight;
+
+                    // Play the audio response
+                    if(data.audio_url) {
+                        const audio = new Audio(data.audio_url);
+                        audio.play();
+                    }
+                    // update the conversation
+                    conversation = data.conversation;
+                    hide = data.hide;
+                } else {
+                    console.error("Error:", response.statusText);
+                }
+            } catch (error) {
+                console.error("Error:", error);
+            }
+        }
+    </script>
+</body>
+</html>
