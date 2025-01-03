@@ -9,7 +9,7 @@
             font-family: Arial, sans-serif;
             margin: 20px;
         }
-        #output-box {
+        #output-box, #feedback-box {
             width: 100%;
             height: 500px;
             border: 1px solid #ccc;
@@ -26,16 +26,33 @@
     </style>
 </head>
 <body>
-    <h1>Conversation with Python Server</h1>
-    <div id="output-box"></div>
+    <h1>Chinese Practice Robot</h1>
+    <table style="width: 100%; border-collapse: collapse;">
+        <tr>
+            <td style="width: 50%; vertical-align: top;">
+                <div id="output-box"></div>
+            </td>
+            <td style="width: 50%; vertical-align: top;">
+                <div id="feedback-box"></div>
+            </td>
+        </tr>
+    </table>
     <br>
-    <input type="text" id="input-box" placeholder="Type your message here">
-    <button id="enter-button">Enter</button>
-
+    <table style="width: 100%; border-collapse: collapse;">
+        <tr>
+            <td style="width: calc(100% - 110px);">
+                <input type="text" id="input-box" placeholder="Type your message here" style="width: 100%; padding: 8px;">
+            </td>
+            <td style="width: 100px;">
+                <button id="enter-button" style="width: 100px; padding: 8px;">Enter</button>
+            </td>
+        </tr>
+    </table>
     <script>
         const outputBox = document.getElementById("output-box");
         const inputBox = document.getElementById("input-box");
         const enterButton = document.getElementById("enter-button");
+        const feedbackBox = document.getElementById("feedback-box");
         
         conversation = null;
         hide = false;
@@ -53,9 +70,9 @@
         async function sendMessage() {
             const userInput = inputBox.value.trim();
             if (!userInput) return;
-
+            
             // Display user's message in the output box
-            outputBox.innerHTML += `<p><strong>></strong> ${userInput}</p>`;
+            outputBox.innerHTML += `<strong>></strong> ${userInput}<br>`;
             inputBox.value = "";
             outputBox.scrollTop = outputBox.scrollHeight;
 
@@ -77,8 +94,15 @@
                     const data = await response.json();
 
                     // Display server's response in the output box
-                    outputBox.innerHTML += `<p>${data.response}</p>`;
+                    if(data.response) {
+                        outputBox.innerHTML += `${data.response}<br><br>`;
+                    }
                     outputBox.scrollTop = outputBox.scrollHeight;
+
+                    // Display feedback in the feedback box
+                    if(data.feedback) {
+                        feedbackBox.innerHTML = `${data.feedback.replace(/\n/g, '<br>')}<br>`;
+                    }
 
                     // Play the audio response
                     if(data.audio_url) {

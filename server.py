@@ -22,7 +22,6 @@ except FileNotFoundError:
 
 # use pypinyin to get pinyin of chinese text
 def get_pinyin(text):
-    print(text)
     return ' '.join([py[0] for py in pinyin(text)])
 
 # use openai to translate text
@@ -53,6 +52,14 @@ system_message = """
 """
 system_message = re.sub(r'\s+', ' ', system_message.strip())
 
+feedback_system_message = """
+    You are to provide feedback on the users input, not a response to it.
+    You should include any corrections in the grammar, or suggest alternative words or phrases if a more natural 
+    phrasing exists. Include pinyin for any new vocabulary introduced. Use only traditional 
+    characters. Respond only in English. Do not suggest the user is free to respond.
+"""
+feedback_system_message = re.sub(r'\s+', ' ', feedback_system_message.strip())
+
 # query openai for next response in conversation
 def chat(conversation):
     try:
@@ -72,6 +79,20 @@ def get_next_response(user_input, conversation):
     response = chat(conversation)
     conversation.append({"role": "system", "content": response})
     return response, conversation
+
+def get_feedback(user_input):
+    try:
+        completion = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": feedback_system_message},
+                {"role": "user", "content": user_input}
+            ]
+        )
+    except Exception as e:
+        print(f"Error: {e}")
+        return "Error: Translation failed"
+    return completion.choices[0].message.content
 
 #############################################
 #############################################
@@ -95,12 +116,14 @@ def process():
         else :
             response = "No text to get pinyin of"
         audio_file_url = None
+        feedback = None
     elif user_input.lower() in ['t', 'translate']:
         if conversation:
             response = translate(conversation[-1]["content"])
         else : 
             response = "No text to translate"
         audio_file_url = None
+        feedback = None
     elif user_input.lower() in ['a', 'audio']:
         if conversation:
             tts = audio(conversation[-1]["content"])
@@ -110,6 +133,7 @@ def process():
         else :
             response = "No text to get audio of"
             audio_file_url = None
+        feedback = None
     elif user_input.lower() in ['r', 'repeat']:
         if conversation:
             tts = audio(conversation[-1]["content"])
@@ -119,12 +143,15 @@ def process():
         else :
             response = "No text to repeat"
             audio_file_url = None
+        feedback = None
     elif user_input.lower() in ['h', 'hide']:
         hide = not hide
         response = f"Text will be {'hidden' if hide else 'shown'}"
         audio_file_url = None
+        feedback=None
     else:
         response, conversation = get_next_response(user_input, conversation)
+        feedback = get_feedback(user_input)
         tts = audio(response)
         tts.save(f"static/audio.mp3")
         audio_file_url = f"/static/audio.mp3"
@@ -137,6 +164,7 @@ def process():
     return jsonify({
         "response": response,
         "audio_url": audio_file_url,
+        "feedback": feedback,
         "conversation": conversation,
         "hide": hide
     })
