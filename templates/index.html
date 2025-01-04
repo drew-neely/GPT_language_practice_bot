@@ -3,51 +3,110 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Python Webserver with TTS</title>
+    <title>Chinese Practice Robot</title>
+    <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
     <style>
+        /* Basic resets and layout */
+        * {
+          box-sizing: border-box;
+          margin: 0;
+          padding: 0;
+        }
+    
         body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
+          font-family: 'Arial', sans-serif;
+          background: linear-gradient(to right, #ece9e6, #ffffff); /* Soft gradient */
+          color: #333;
+          margin: 20px;
         }
+    
+        h1 {
+          text-align: center;
+          margin-bottom: 20px;
+          font-weight: 600;
+          color: #4A4A4A;
+        }
+    
+        /* Output and feedback boxes */
         #output-box, #feedback-box {
-            width: 100%;
-            height: 500px;
-            border: 1px solid #ccc;
-            padding: 10px;
-            overflow-y: scroll;
+          width: calc(100% - 10px);
+          height: 500px;
+          border: 1px solid #ccc;
+          padding: 10px;
+          overflow-y: auto;
+          background-color: #f9f9f9;
+          border-radius: 5px;
+          box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
         }
+    
+        /* Table styling */
+        table {
+          width: 100%;
+          border-collapse: collapse;
+          margin-bottom: 20px;
+        }
+    
+        td {
+          vertical-align: top;
+          padding: 5px;
+        }
+    
+        /* Input box styling */
         #input-box {
-            width: calc(100% - 60px);
-            padding: 10px;
+          width: 100%;
+          padding: 10px;
+          border: 1px solid #ccc;
+          border-radius: 4px;
+          font-size: 14px;
         }
+    
+        #input-box:focus {
+          outline: none;
+          border-color: #4CAF50;
+          box-shadow: 0 0 5px rgba(76, 175, 80, 0.5);
+        }
+    
+        /* Button styling */
         #enter-button {
-            padding: 10px;
+          width: 100%;
+          padding: 10px;
+          background-color: #4CAF50;
+          color: #fff;
+          font-size: 14px;
+          border: none;
+          border-radius: 4px;
+          cursor: pointer;
+          transition: background-color 0.3s ease;
         }
-    </style>
+    
+        #enter-button:hover {
+          background-color: #45a049;
+        }
+      </style>
 </head>
 <body>
     <h1>Chinese Practice Robot</h1>
-    <table style="width: 100%; border-collapse: collapse;">
+    <table>
         <tr>
-            <td style="width: 50%; vertical-align: top;">
-                <div id="output-box"></div>
-            </td>
-            <td style="width: 50%; vertical-align: top;">
-                <div id="feedback-box"></div>
-            </td>
+          <td style="width: 50%;">
+            <div id="output-box"></div>
+          </td>
+          <td style="width: 50%;">
+            <div id="feedback-box"></div>
+          </td>
         </tr>
-    </table>
-    <br>
-    <table style="width: 100%; border-collapse: collapse;">
+      </table>
+    
+      <table>
         <tr>
-            <td style="width: calc(100% - 110px);">
-                <input type="text" id="input-box" placeholder="Type your message here" style="width: 100%; padding: 8px;">
-            </td>
-            <td style="width: 100px;">
-                <button id="enter-button" style="width: 100px; padding: 8px;">Enter</button>
-            </td>
+          <td style="width: calc(100% - 160px);">
+            <input type="text" id="input-box" placeholder="Type your message here">
+          </td>
+          <td style="width: 150px;">
+            <button id="enter-button">Enter</button>
+          </td>
         </tr>
-    </table>
+      </table>
     <script>
         const outputBox = document.getElementById("output-box");
         const inputBox = document.getElementById("input-box");
