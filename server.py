@@ -9,8 +9,10 @@ from pypinyin import pinyin
 from gtts import gTTS
 
 # Load OpenAI API key from file
+server_dir = os.path.dirname(__file__)  # directory of server.py
+key_file_path = os.path.join(server_dir, "openai_key.txt")
 try:
-    with open("openai_key.txt", "r") as file:
+    with open(key_file_path, "r") as file:
         client = OpenAI(api_key=file.read().strip())
 except FileNotFoundError:
     print(f"Error: openai_key.txt not found. Make sure it exists and is in the correct directory.")
@@ -127,7 +129,7 @@ def process():
     elif user_input.lower() in ['a', 'audio']:
         if conversation:
             tts = audio(conversation[-1]["content"])
-            tts.save(f"static/audio.mp3")
+            tts.save(os.path.join(server_dir, "static/audio.mp3"))
             audio_file_url = f"/static/audio.mp3"
             response = ""
         else :
@@ -137,7 +139,7 @@ def process():
     elif user_input.lower() in ['r', 'repeat']:
         if conversation:
             tts = audio(conversation[-1]["content"])
-            tts.save(f"static/audio.mp3")
+            tts.save(os.path.join(server_dir, "static/audio.mp3"))
             audio_file_url = f"/static/audio.mp3"
             response = conversation[-1]["content"]
         else :
@@ -153,7 +155,7 @@ def process():
         response, conversation = get_next_response(user_input, conversation)
         feedback = get_feedback(user_input)
         tts = audio(response)
-        tts.save(f"static/audio.mp3")
+        tts.save(os.path.join(server_dir, "static/audio.mp3"))
         audio_file_url = f"/static/audio.mp3"
         if(hide):
             response = ""
