@@ -39,21 +39,20 @@
           box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
         }
     
-        /* Table styling */
-        table {
-          width: 100%;
-          border-collapse: collapse;
+        /* Flexbox Layout */
+        .row {
+          display: flex;
+          gap: 10px;
           margin-bottom: 20px;
         }
-    
-        td {
-          vertical-align: top;
-          padding: 5px;
+
+        .col {
+          flex: 1;
         }
     
         /* Input box styling */
         #input-box {
-          width: 100%;
+          flex-grow: 1;
           padding: 10px;
           border: 1px solid #ccc;
           border-radius: 4px;
@@ -68,7 +67,7 @@
     
         /* Button styling */
         #enter-button {
-          width: 100%;
+          width: 150px;
           padding: 10px;
           background-color: #4CAF50;
           color: #fff;
@@ -82,51 +81,176 @@
         #enter-button:hover {
           background-color: #45a049;
         }
+
+        /* Action buttons styling */
+        #pinyin-button, #translate-button, #replay-button {
+          padding: 10px 15px;
+          background-color: #2196F3;
+          color: white;
+          border: none;
+          border-radius: 4px;
+          cursor: pointer;
+          font-size: 14px;
+          margin-right: 5px;
+          transition: background-color 0.3s;
+        }
+
+        #pinyin-button:hover, #translate-button:hover, #replay-button:hover {
+          background-color: #0b7dda;
+        }
+
+        /* The switch - the box around the slider */
+        .switch {
+          position: relative;
+          display: inline-block;
+          width: 60px;
+          height: 34px;
+          vertical-align: middle;
+          margin-left: 10px;
+        }
+
+        /* Hide default HTML checkbox */
+        .switch input {
+          opacity: 0;
+          width: 0;
+          height: 0;
+        }
+
+        /* The slider */
+        .slider {
+          position: absolute;
+          cursor: pointer;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background-color: #ccc;
+          -webkit-transition: .4s;
+          transition: .4s;
+        }
+
+        .slider:before {
+          position: absolute;
+          content: "";
+          height: 26px;
+          width: 26px;
+          left: 4px;
+          bottom: 4px;
+          background-color: white;
+          -webkit-transition: .4s;
+          transition: .4s;
+        }
+
+        input:checked + .slider {
+          background-color: #2196F3;
+        }
+
+        input:focus + .slider {
+          box-shadow: 0 0 1px #2196F3;
+        }
+
+        input:checked + .slider:before {
+          -webkit-transform: translateX(26px);
+          -ms-transform: translateX(26px);
+          transform: translateX(26px);
+        }
+
+        /* Rounded sliders */
+        .slider.round {
+          border-radius: 34px;
+        }
+
+        .slider.round:before {
+          border-radius: 50%;
+        }
+
+        label[for="hide-toggle"] {
+          vertical-align: middle;
+          font-weight: bold;
+        }
+
+        /* Loading Spinner */
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            vertical-align: middle;
+            margin-left: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .row {
+                flex-direction: column;
+            }
+            #enter-button {
+                width: 100%;
+            }
+        }
       </style>
 </head>
 <body>
     <h1>Chinese Practice Robot</h1>
-    <table>
-        <tr>
-          <td style="width: 50%;">
-            <div id="output-box"></div>
-          </td>
-          <td style="width: 50%;">
-            <div id="feedback-box"></div>
-          </td>
-        </tr>
-      </table>
     
-      <table>
-        <tr>
-          <td style="width: calc(100% - 160px);">
-            <input type="text" id="input-box" placeholder="Type your message here">
-          </td>
-          <td style="width: 150px;">
-            <button id="enter-button">Enter</button>
-          </td>
-        </tr>
-      </table>
+    <div class="row">
+        <div id="output-box" class="col"></div>
+        <div id="feedback-box" class="col"></div>
+    </div>
+    
+    <div class="row">
+        <input type="text" id="input-box" placeholder="Type your message here">
+        <button id="enter-button">Enter</button>
+    </div>
+
+    <div class="row">
+        <div class="col" style="display: block;">
+                <button id="pinyin-button">Pinyin</button>
+                <button id="translate-button">Translate</button>
+                <button id="replay-button">Replay</button>
+                <label class="switch">
+                    <input type="checkbox" id="hide-toggle">
+                    <span class="slider round"></span>
+                </label>
+                <label for="hide-toggle">Hide Text</label>
+        </div>
+    </div>
     <script>
         const outputBox = document.getElementById("output-box");
         const inputBox = document.getElementById("input-box");
         const enterButton = document.getElementById("enter-button");
         const feedbackBox = document.getElementById("feedback-box");
+        const pinyinButton = document.getElementById("pinyin-button");
+        const translateButton = document.getElementById("translate-button");
+        const replayButton = document.getElementById("replay-button");
+        const hideToggle = document.getElementById("hide-toggle");
         
-        conversation = null;
-        hide = false;
+        let conversation = null;
+        let hide = hideToggle.checked;
         
         // Handle enter key and button click events
         inputBox.addEventListener("keydown", (event) => {
             if (event.key === "Enter") {
-                const userInput = inputBox.value.trim();
-                sendMessage(userInput);
+                handleSendMessage();
             }
         });
-        enterButton.addEventListener("click", sendMessage);
+        enterButton.addEventListener("click", handleSendMessage);
+        pinyinButton.addEventListener("click", () => sendAction('pinyin'));
+        translateButton.addEventListener("click", () => sendAction('translate'));
+        replayButton.addEventListener("click", () => sendAction('replay'));
+        hideToggle.addEventListener("change", () => {
+            hide = hideToggle.checked;
+        });
 
-
-        async function sendMessage() {
+        function handleSendMessage() {
             const userInput = inputBox.value.trim();
             if (!userInput) return;
             
@@ -134,9 +258,21 @@
             outputBox.innerHTML += `<strong>></strong> ${userInput}<br>`;
             inputBox.value = "";
             outputBox.scrollTop = outputBox.scrollHeight;
+            sendMessage(userInput);
+        }
 
+        function sendAction(action) {
+            sendMessage(action);
+        }
+
+        async function sendMessage(userInput) {
             // Send the input to the server
             try {
+                // Show loading indicator
+                const loadingId = 'loading-' + Date.now();
+                outputBox.innerHTML += `<div id="${loadingId}" style="margin-top:10px;"><em>Thinking...</em> <div class="spinner"></div></div>`;
+                outputBox.scrollTop = outputBox.scrollHeight;
+
                 const response = await fetch("/chat", {
                     method: "POST",
                     headers: {
@@ -145,15 +281,20 @@
                     body: JSON.stringify({
                         input: userInput,
                         conversation: conversation,
-                        hide: hide   
                     })
                 });
+
+                // Remove loading indicator
+                const loadingElement = document.getElementById(loadingId);
+                if (loadingElement) loadingElement.remove();
 
                 if (response.ok) {
                     const data = await response.json();
 
                     // Display server's response in the output box
-                    if(data.response) {
+                    const lowerInput = userInput.toLowerCase();
+                    const alwaysShow = ['pinyin', 'p', 'translate', 't'].includes(lowerInput);
+                    if(data.response && (!hide || alwaysShow)) {
                         outputBox.innerHTML += `${data.response}<br><br>`;
                     }
                     outputBox.scrollTop = outputBox.scrollHeight;
@@ -170,7 +311,6 @@
                     }
                     // update the conversation
                     conversation = data.conversation;
-                    hide = data.hide;
                 } else {
                     console.error("Error:", response.statusText);
                 }

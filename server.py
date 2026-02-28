@@ -1,6 +1,7 @@
 import os
 import re
 import time
+import concurrent.futures
 
 from flask import Flask, request, jsonify, render_template
 
@@ -18,6 +19,8 @@ except FileNotFoundError:
     print(f"Error: openai_key.txt not found. Make sure it exists and is in the correct directory.")
     exit(1)
 
+OPENAI_MODEL = "gpt-5-mini"
+
 #############################################
 #############################################
 #############################################
@@ -30,7 +33,7 @@ def get_pinyin(text):
 def translate(text):
     try:
         completion = client.chat.completions.create(
-            model="gpt-4o-mini",
+            model=OPENAI_MODEL,
             messages=[
                 {"role": "system", "content": "You are to translate the users input into english."},
                 {"role": "user", "content": text}
@@ -59,6 +62,8 @@ feedback_system_message = """
     You should include any corrections in the grammar, or suggest alternative words or phrases if a more natural 
     phrasing exists. Include pinyin for any new vocabulary introduced. Use only traditional 
     characters. Respond only in English. Do not suggest the user is free to respond.
+    If there is nothing to critique or the input is in english, you do not need to provide any feedback.
+    Be concise but informative.
 """
 feedback_system_message = re.sub(r'\s+', ' ', feedback_system_message.strip())
 
@@ -66,13 +71,14 @@ feedback_system_message = re.sub(r'\s+', ' ', feedback_system_message.strip())
 def chat(conversation):
     try:
         completion = client.chat.completions.create(
-            model="gpt-4o-mini",
+            model=OPENAI_MODEL,
             messages=conversation
         )
+        response = completion.choices[0].message.content
+        return response
     except Exception as e:
         print(f"Error: {e}")
-    response = completion.choices[0].message.content
-    return response
+        return "Error: Unable to get response from AI"
 
 def get_next_response(user_input, conversation):
     if conversation == None :
@@ -85,7 +91,7 @@ def get_next_response(user_input, conversation):
 def get_feedback(user_input):
     try:
         completion = client.chat.completions.create(
-            model="gpt-4o-mini",
+            model=OPENAI_MODEL,
             messages=[
                 {"role": "system", "content": feedback_system_message},
                 {"role": "user", "content": user_input}
@@ -110,7 +116,6 @@ def index():
 def process():
     user_input = request.json.get("input", "").strip()
     conversation = request.json.get("conversation", [])
-    hide = request.json.get("hide", False)
     
     if user_input.lower() in ['p', 'pinyin']:
         if conversation:
@@ -126,39 +131,35 @@ def process():
             response = "No text to translate"
         audio_file_url = None
         feedback = None
-    elif user_input.lower() in ['a', 'audio']:
+    elif user_input.lower() == 'replay':
         if conversation:
-            tts = audio(conversation[-1]["content"])
-            tts.save(os.path.join(server_dir, "static/audio.mp3"))
-            audio_file_url = f"/static/audio.mp3"
+            try:
+                tts = audio(conversation[-1]["content"])
+                tts.save(os.path.join(server_dir, "static/audio.mp3"))
+                audio_file_url = f"/static/audio.mp3"
+            except Exception as e:
+                print(f"Error generating audio: {e}")
+                audio_file_url = None
             response = ""
         else :
-            response = "No text to get audio of"
+            response = "No text to replay"
             audio_file_url = None
         feedback = None
-    elif user_input.lower() in ['r', 'repeat']:
-        if conversation:
-            tts = audio(conversation[-1]["content"])
-            tts.save(os.path.join(server_dir, "static/audio.mp3"))
-            audio_file_url = f"/static/audio.mp3"
-            response = conversation[-1]["content"]
-        else :
-            response = "No text to repeat"
-            audio_file_url = None
-        feedback = None
-    elif user_input.lower() in ['h', 'hide']:
-        hide = not hide
-        response = f"Text will be {'hidden' if hide else 'shown'}"
-        audio_file_url = None
-        feedback=None
     else:
-        response, conversation = get_next_response(user_input, conversation)
-        feedback = get_feedback(user_input)
-        tts = audio(response)
-        tts.save(os.path.join(server_dir, "static/audio.mp3"))
-        audio_file_url = f"/static/audio.mp3"
-        if(hide):
-            response = ""
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            future_resp = executor.submit(get_next_response, user_input, conversation)
+            future_feed = executor.submit(get_feedback, user_input)
+
+            response, conversation = future_resp.result()
+            feedback = future_feed.result()
+
+        try:
+            tts = audio(response)
+            tts.save(os.path.join(server_dir, "static/audio.mp3"))
+            audio_file_url = f"/static/audio.mp3"
+        except Exception as e:
+            print(f"Error generating audio: {e}")
+            audio_file_url = None
 
     if(audio_file_url):
         audio_file_url += f"?t={time.time()}"
@@ -167,8 +168,7 @@ def process():
         "response": response,
         "audio_url": audio_file_url,
         "feedback": feedback,
-        "conversation": conversation,
-        "hide": hide
+        "conversation": conversation
     })
 
 
