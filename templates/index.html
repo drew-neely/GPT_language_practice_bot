@@ -248,6 +248,9 @@
         replayButton.addEventListener("click", () => sendAction('replay'));
         hideToggle.addEventListener("change", () => {
             hide = hideToggle.checked;
+            document.querySelectorAll('.hideable').forEach(el => {
+                el.style.display = hide ? 'none' : 'block';
+            });
         });
 
         function handleSendMessage() {
@@ -294,8 +297,13 @@
                     // Display server's response in the output box
                     const lowerInput = userInput.toLowerCase();
                     const alwaysShow = ['pinyin', 'p', 'translate', 't'].includes(lowerInput);
-                    if(data.response && (!hide || alwaysShow)) {
-                        outputBox.innerHTML += `${data.response}<br><br>`;
+                    if(data.response) {
+                        if (alwaysShow) {
+                            outputBox.innerHTML += `${data.response}<br><br>`;
+                        } else {
+                            const displayStyle = hide ? 'none' : 'block';
+                            outputBox.innerHTML += `<div class="hideable" style="display: ${displayStyle};">${data.response}<br><br></div>`;
+                        }
                     }
                     outputBox.scrollTop = outputBox.scrollHeight;
 
