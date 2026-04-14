@@ -1,1 +1,6 @@
 openai_key.txt
+claude_key.txt
+static/sentence_history.json
+static/translate_audio.mp3
+static/audio.mp3
+__pycache__

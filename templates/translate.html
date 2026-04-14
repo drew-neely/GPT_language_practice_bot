@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Translate Tool</title>
+    <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <style>
+        /* Basic resets and layout from chat.html */
+        * {
+          box-sizing: border-box;
+          margin: 0;
+          padding: 0;
+        }
+    
+        body {
+          font-family: 'Arial', sans-serif;
+          background: linear-gradient(to right, #ece9e6, #ffffff);
+          color: #333;
+          padding: 20px;
+        }
+    
+        h1, h2 {
+          text-align: center;
+          margin-bottom: 20px;
+          font-weight: 600;
+          color: #4A4A4A;
+        }
+
+        h2 {
+            text-align: left;
+            margin-top: 0;
+        }
+    
+        /* Flexbox Layout */
+        .row {
+          display: flex;
+          gap: 20px;
+          margin-bottom: 20px;
+        }
+
+        .col {
+          flex: 1;
+          padding: 20px;
+          background-color: #f9f9f9;
+          border: 1px solid #ccc;
+          border-radius: 5px;
+          box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+    
+        /* Button styling */
+        .btn {
+          padding: 10px 15px;
+          background-color: #2196F3;
+          color: white;
+          border: none;
+          border-radius: 4px;
+          cursor: pointer;
+          font-size: 16px;
+          transition: background-color 0.3s;
+          display: block;
+          width: 100%;
+          margin-bottom: 20px;
+        }
+
+        .btn:hover:not(:disabled) {
+          background-color: #0b7dda;
+        }
+
+        .btn:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+
+        /* Text area styling */
+        textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 14px;
+            min-height: 150px;
+            margin-bottom: 15px;
+        }
+
+        #translation-input {
+            height: 300px;
+        }
+
+        label {
+            font-weight: bold;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        /* The switch - from chat.html */
+        .switch {
+          position: relative;
+          display: inline-block;
+          width: 60px;
+          height: 34px;
+        }
+
+        .switch input {
+          opacity: 0;
+          width: 0;
+          height: 0;
+        }
+
+        .slider {
+          position: absolute;
+          cursor: pointer;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background-color: #ccc;
+          transition: .4s;
+        }
+
+        .slider:before {
+          position: absolute;
+          content: "";
+          height: 26px;
+          width: 26px;
+          left: 4px;
+          bottom: 4px;
+          background-color: white;
+          transition: .4s;
+        }
+
+        input:checked + .slider {
+          background-color: #2196F3;
+        }
+
+        input:focus + .slider {
+          box-shadow: 0 0 1px #2196F3;
+        }
+
+        input:checked + .slider:before {
+          transform: translateX(26px);
+        }
+
+        .slider.round {
+          border-radius: 34px;
+        }
+
+        .slider.round:before {
+          border-radius: 50%;
+        }
+
+        .mode-toggle-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .mode-toggle-container span {
+            font-size: 14px;
+            text-align: center;
+        }
+
+        .show-chinese-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .row {
+                flex-direction: column;
+            }
+        }
+      </style>
+</head>
+<body>
+    <h1>Translate Tool</h1>
+    
+    <div class="row">
+        <div id="translation-col" class="col">
+            <h2>Practice</h2>
+            <button id="generate-button" class="btn" style="background-color: #4CAF50;">Generate Sentence</button>
+            <button id="play-button" class="btn" disabled>Play Audio</button>
+            <div class="show-chinese-container">
+                <label class="switch">
+                    <input type="checkbox" id="show-chinese-toggle">
+                    <span class="slider round"></span>
+                </label>
+                <label for="show-chinese-toggle">Show Chinese Text</label>
+            </div>
+            <div id="chinese-sentence-display" style="display: none; margin-bottom: 15px; padding: 10px; background-color: #e9e9e9; border-radius: 4px; font-size: 1.2em;">
+                <!-- Chinese sentence will be injected here by JS -->
+            </div>
+            <textarea id="translation-input" placeholder="Generate a sentence to begin..."></textarea>
+            <button id="submit-button" class="btn" style="background-color: #ff9800;" disabled>Check Answer</button>
+            <div id="answer-display" style="display: none; margin-top: 15px;">
+                <h3>Correct Answer:</h3>
+                <p><strong>Chinese:</strong> <span id="answer-chinese"></span></p>
+                <p><strong>English:</strong> <span id="answer-english"></span></p>
+            </div>
+        </div>
+        <div id="config-col" class="col">
+            <h2>Configuration</h2>
+            <label for="vocab-baseline">Baseline Vocabulary:</label>
+            <textarea id="vocab-baseline" placeholder="e.g., HSK 2, Chapter 15 of Integrated Chinese">HSK2</textarea>
+
+            <label for="specific-words">Specific Words to Practice:</label>
+            <textarea id="specific-words" placeholder="e.g., 电脑, 手机, 学习"></textarea>
+        </div>
+    </div>
+    <script>
+        const generateButton = document.getElementById('generate-button');
+        const playButton = document.getElementById('play-button');
+        const vocabBaselineInput = document.getElementById('vocab-baseline');
+        const specificWordsInput = document.getElementById('specific-words');
+        const translationInput = document.getElementById('translation-input');
+        const showChineseToggle = document.getElementById('show-chinese-toggle');
+        const chineseSentenceDisplay = document.getElementById('chinese-sentence-display');
+        const submitButton = document.getElementById('submit-button');
+        const answerDisplay = document.getElementById('answer-display');
+        const answerChinese = document.getElementById('answer-chinese');
+        const answerEnglish = document.getElementById('answer-english');
+
+        let currentAudioUrl = null;
+        let currentChineseSentence = null;
+        let currentEnglishTranslation = null;
+
+        generateButton.addEventListener('click', async () => {
+            const config = {
+                vocab_baseline: vocabBaselineInput.value,
+                specific_words: specificWordsInput.value,
+            };
+
+            // Provide visual feedback that something is happening
+            generateButton.textContent = 'Generating...';
+            generateButton.disabled = true;
+            playButton.disabled = true;
+            submitButton.disabled = true;
+
+            try {
+                const response = await fetch('/api/translate/generate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(config)
+                });
+
+                const data = await response.json();
+
+                if (response.ok && !data.error) {
+                    currentAudioUrl = data.audio_url;
+                    currentChineseSentence = data.chinese_sentence;
+                    currentEnglishTranslation = data.english_translation;
+
+                    // Reset UI state for new sentence
+                    playButton.disabled = false;
+                    submitButton.disabled = false;
+                    translationInput.value = ''; // Clear previous translation
+                    answerDisplay.style.display = 'none';
+                    chineseSentenceDisplay.style.display = 'none';
+                    showChineseToggle.checked = false;
+
+                    // Auto-play audio
+                    if (currentAudioUrl) {
+                        const audio = new Audio(currentAudioUrl);
+                        audio.play();
+                    }
+
+                    // Update placeholder based on mode
+                    if (config.mode === 'zh-zh') {
+                        translationInput.placeholder = "Enter the Chinese sentence you heard...";
+                    } else {
+                        translationInput.placeholder = "Enter your English translation here...";
+                    }
+                } else {
+                    alert(`Error: ${data.error || 'An unknown error occurred on the server.'}`);
+                }
+            } catch (error) {
+                console.error('Fetch error:', error);
+                alert('An error occurred while communicating with the server.');
+            } finally {
+                // Restore button state
+                generateButton.textContent = 'Generate Sentence';
+                generateButton.disabled = false;
+            }
+        });
+
+        showChineseToggle.addEventListener('change', () => {
+            if (showChineseToggle.checked && currentChineseSentence) {
+                chineseSentenceDisplay.textContent = currentChineseSentence;
+                chineseSentenceDisplay.style.display = 'block';
+            } else {
+                chineseSentenceDisplay.style.display = 'none';
+            }
+        });
+
+        submitButton.addEventListener('click', () => {
+            if (currentChineseSentence && currentEnglishTranslation) {
+                answerChinese.textContent = currentChineseSentence;
+                answerEnglish.textContent = currentEnglishTranslation;
+                answerDisplay.style.display = 'block';
+            }
+        });
+
+        playButton.addEventListener('click', () => {
+            if (currentAudioUrl) {
+                const audio = new Audio(currentAudioUrl);
+                audio.play();
+            }
+        });
+
+    </script>
+</body>
+</html>
